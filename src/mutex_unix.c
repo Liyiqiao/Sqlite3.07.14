@@ -10,6 +10,7 @@
 **
 *************************************************************************
 ** This file contains the C functions that implement mutexes for pthreads
+**该文件包含执行互斥体pthreads的C函数
 */
 #include "sqliteInt.h"
 
@@ -20,6 +21,11 @@
 ** Note that this implementation requires a version of pthreads that
 ** supports recursive mutexes.
 */
+/*在该文件中的代码，如果我们正在编译线程仅用于
+**在UNIX下用pthread的。
+**注意，此实现需要一个版本的pthreads那
+**支持递归互斥体。
+*/
 #ifdef SQLITE_MUTEX_PTHREADS
 
 #include <pthread.h>
@@ -29,6 +35,11 @@
 ** are necessary under two condidtions:  (1) Debug builds and (2) using
 ** home-grown mutexes.  Encapsulate these conditions into a single #define.
 */
+/*
+该sqlite3_mutex.id，sqlite3_mutex.nRef和sqlite3_mutex.owner领域
+**在两种condidtions是必要的：（1）调试构建和（2），使用
+**土生土长的互斥。封装这些条件成单一的#define。
+*/
 #if defined(SQLITE_DEBUG) || defined(SQLITE_HOMEGROWN_RECURSIVE_MUTEX)
 # define SQLITE_MUTEX_NREF 1
 #else
@@ -37,6 +48,7 @@
 
 /*
 ** Each recursive mutex is an instance of the following structure.
+每个递归互斥是以下结构的一个实例
 */
 struct sqlite3_mutex {
   pthread_mutex_t mutex;     /* Mutex controlling the lock */
@@ -145,7 +157,13 @@ static sqlite3_mutex *pthreadMutexAlloc(int iType){
         ** build our own.  See below. */
         pthread_mutex_init(&p->mutex, 0);
 #else
+/*
+锁分配成功The sqlite3_mutex_try()接口返回SQLITE_OK。
+**可以多次进入互斥使用SQLITE_MUTEX_RECURSIVE创建相同的线程。
+**在这种情况下,互斥锁之前必须退出相同次数的另一个线程可以进入。
+**如果相同的线程试图进入任何其他类型的互斥不止一次,这种行为是未定义的。*/
         /* Use a recursive mutex if it is available */
+/*使用递归互斥体（如果可用）*/
         pthread_mutexattr_t recursiveAttr;
         pthread_mutexattr_init(&recursiveAttr);
         pthread_mutexattr_settype(&recursiveAttr, PTHREAD_MUTEX_RECURSIVE);
@@ -187,6 +205,8 @@ static sqlite3_mutex *pthreadMutexAlloc(int iType){
 ** allocated mutex.  SQLite is careful to deallocate every
 ** mutex that it allocates.
 */
+/*
+这个函数用于重新分配之前分配的互斥*/
 static void pthreadMutexFree(sqlite3_mutex *p){
   assert( p->nRef==0 );
   assert( p->id==SQLITE_MUTEX_FAST || p->id==SQLITE_MUTEX_RECURSIVE );
@@ -232,6 +252,7 @@ static void pthreadMutexEnter(sqlite3_mutex *p){
   }
 #else
   /* Use the built-in recursive mutexes if they are available.
+使用内置的递归互斥体（如果有）
   */
   pthread_mutex_lock(&p->mutex);
 #if SQLITE_MUTEX_NREF
@@ -276,6 +297,8 @@ static int pthreadMutexTry(sqlite3_mutex *p){
       rc = SQLITE_BUSY;
     }
   }
+/*函数退出一个互斥锁该锁是以前输入的相同的线程。
+如果互斥对象当前不是目前进入口的不分配的行为是未定义的,SQLiteSQLite永远不会做。*/
 #else
   /* Use the built-in recursive mutexes if they are available.
   */
@@ -297,7 +320,7 @@ static int pthreadMutexTry(sqlite3_mutex *p){
 #endif
   return rc;
 }
-
+/*如果相同的线程试图进入任何其他类型的互斥不止一次,这种行为是未定义的。*/
 /*
 ** The sqlite3_mutex_leave() routine exits a mutex that was
 ** previously entered by the same thread.  The behavior
@@ -311,6 +334,7 @@ static void pthreadMutexLeave(sqlite3_mutex *p){
   if( p->nRef==0 ) p->owner = 0;
 #endif
   assert( p->nRef==0 || p->id==SQLITE_MUTEX_RECURSIVE );
+/*如果使用SQLITE_MUTEX_NOOP编译,那么无操作互斥对象的实现被使用不顾运行时线程安全设置*/
 
 #ifdef SQLITE_HOMEGROWN_RECURSIVE_MUTEX
   if( p->nRef==0 ){

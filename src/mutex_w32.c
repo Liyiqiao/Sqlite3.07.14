@@ -10,17 +10,20 @@
 **
 *************************************************************************
 ** This file contains the C functions that implement mutexes for win32
-*/
+*/*该文件包含执行互斥体为Win32的C函数*/
 #include "sqliteInt.h"
 
 /*
 ** The code in this file is only used if we are compiling multithreaded
 ** on a win32 system.
 */
+/*在这个文件中的代码，如果我们编译多线程仅用于
+?在Win32系统。*/
 #ifdef SQLITE_MUTEX_W32
 
 /*
 ** Each recursive mutex is an instance of the following structure.
+/*每个递归互斥是以下结构的一个实例。*/
 */
 struct sqlite3_mutex {
   CRITICAL_SECTION mutex;    /* Mutex controlling the lock */
@@ -71,7 +74,9 @@ struct sqlite3_mutex {
   }
 #endif /* SQLITE_OS_WINCE */
 #endif
-
+/*
+此文件中的代码用于实现内存DB日志。在内存中的回滚事务用于存储事务汇报
+*/
 #ifdef SQLITE_DEBUG
 /*
 ** The sqlite3_mutex_held() and sqlite3_mutex_notheld() routine are
@@ -86,12 +91,14 @@ static int winMutexNotheld2(sqlite3_mutex *p, DWORD tid){
 static int winMutexNotheld(sqlite3_mutex *p){
   DWORD tid = GetCurrentThreadId(); 
   return winMutexNotheld2(p, tid);
+//如果文件句柄作为参数传递的是内存中的日志，返回true
 }
 #endif
-
+/*据库不会试图读取之前回滚日志文件的最后事务。*/
 
 /*
 ** Initialize and deinitialize the mutex subsystem.
+/*初始化和取消初始化互斥子系统。*/
 */
 static sqlite3_mutex winMutex_staticMutexes[6] = {
   SQLITE3_MUTEX_INITIALIZER,
@@ -130,7 +137,9 @@ static int winMutexInit(void){
     }
   }
   return SQLITE_OK; 
+/*此对象的一个实例作为一个游标到恢复日志。游标可以用于读或写。*/
 }
+/*输入的大小小于2的幂。这样，FileChunk对象会填充内存分配大小至2的幂数，这样就能将空间浪费降至最小。*/
 
 static int winMutexEnd(void){ 
   /* The first to decrement to 0 does actual shutdown 
@@ -221,12 +230,17 @@ static sqlite3_mutex *winMutexAlloc(int iType){
   }
   return p;
 }
-
+//检查排斥锁 
 
 /*
 ** This routine deallocates a previously
 ** allocated mutex.  SQLite is careful to deallocate every
 ** mutex that it allocates.
+*/
+/*
+这个程序将释放先前
+?分配互斥。 SQLite是谨慎地释放每个
+互斥体，它分配。
 */
 static void winMutexFree(sqlite3_mutex *p){
   assert( p );
@@ -254,12 +268,13 @@ static void winMutexEnter(sqlite3_mutex *p){
 #endif
   EnterCriticalSection(&p->mutex);
 #ifdef SQLITE_DEBUG
-  assert( p->nRef>0 || p->owner==0 );
+  assert( p->nRef>0 || p->owner==0 );//断言
   p->owner = tid; 
   p->nRef++;
   if( p->trace ){
     printf("enter mutex %p (%d) with nRef=%d\n", p, p->trace, p->nRef);
   }
+//如果文件句柄作为参数传递的是内存中的日志，返回true
 #endif
 }
 static int winMutexTry(sqlite3_mutex *p){
@@ -302,6 +317,11 @@ static int winMutexTry(sqlite3_mutex *p){
 ** is undefined if the mutex is not currently entered or
 ** is not currently allocated.  SQLite will never do either.
 */
+/*
+该sqlite3_mutex_leave（）函数退出一个互斥量，这是
+?先前由同一线程进入。如果互斥锁当前没有输入的行为是不明确或
+当前未分配的。 SQLite的永远不会做任何。
+*/
 static void winMutexLeave(sqlite3_mutex *p){
 #ifndef NDEBUG
   DWORD tid = GetCurrentThreadId();
@@ -338,5 +358,6 @@ sqlite3_mutex_methods const *sqlite3DefaultMutex(void){
   };
 
   return &sMutex;
+//返回最大值
 }
 #endif /* SQLITE_MUTEX_W32 */
